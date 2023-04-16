@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/sinulingga23/learn-prometheus/monitoring"
 )
 
 type (
@@ -33,20 +34,30 @@ func NewAPI() API {
 
 func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	serviceName := "add_product"
 
 	bytesBody, errReadAll := io.ReadAll(r.Body)
 	if errReadAll != nil {
+
+		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	addProduct := AddProduct{}
 	if errUnmarshal := json.Unmarshal(bytesBody, &addProduct); errUnmarshal != nil {
+
+		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if addProduct.Name == "" || addProduct.Stock <= 0 {
+
+		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -56,6 +67,8 @@ func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 		Name:  addProduct.Name,
 		Stock: addProduct.Stock,
 	})
+
+	go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusOK)).Inc()
 
 	w.WriteHeader(http.StatusOK)
 	return
