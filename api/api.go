@@ -76,17 +76,26 @@ func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) GetProducts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	serviceName := "get_products"
 
 	if len(api.products) == 0 {
+
+		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusNotFound)).Inc()
+
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	bytesProducts, errMarshal := json.Marshal(api.products)
 	if errMarshal != nil {
+
+		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusOK)).Inc()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytesProducts)
@@ -95,10 +104,14 @@ func (api *API) GetProducts(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) GetProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	serviceName := "get_product"
 
 	idStr := chi.URLParam(r, "id")
 	id, errAtoi := strconv.Atoi(idStr)
 	if errAtoi != nil {
+
+		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -107,6 +120,9 @@ func (api *API) GetProduct(w http.ResponseWriter, r *http.Request) {
 		if id == int(product.Id) {
 			bytesProduct, errMarshal := json.Marshal(product)
 			if errMarshal != nil {
+
+				go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusOK)).Inc()
+
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -116,6 +132,8 @@ func (api *API) GetProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusNotFound)).Inc()
 
 	w.WriteHeader(http.StatusNotFound)
 	return
