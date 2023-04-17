@@ -35,11 +35,16 @@ func NewAPI() API {
 func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	serviceName := "add_product"
+	now := time.Now()
 
 	bytesBody, errReadAll := io.ReadAll(r.Body)
 	if errReadAll != nil {
 
-		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+		go func() {
+			httpStatus := strconv.Itoa(http.StatusBadRequest)
+			go monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+			go monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+		}()
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -48,7 +53,11 @@ func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 	addProduct := AddProduct{}
 	if errUnmarshal := json.Unmarshal(bytesBody, &addProduct); errUnmarshal != nil {
 
-		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+		go func() {
+			httpStatus := strconv.Itoa(http.StatusBadRequest)
+			monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+			monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method)
+		}()
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -56,7 +65,11 @@ func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 
 	if addProduct.Name == "" || addProduct.Stock <= 0 {
 
-		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+		go func() {
+			httpStatus := strconv.Itoa(http.StatusBadRequest)
+			monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+			monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method)
+		}()
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -68,7 +81,11 @@ func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 		Stock: addProduct.Stock,
 	})
 
-	go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusOK)).Inc()
+	go func() {
+		httpStatus := strconv.Itoa(http.StatusOK)
+		monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+		monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+	}()
 
 	w.WriteHeader(http.StatusOK)
 	return
@@ -77,10 +94,15 @@ func (api *API) AddProduct(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetProducts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	serviceName := "get_products"
+	now := time.Now()
 
 	if len(api.products) == 0 {
 
-		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusNotFound)).Inc()
+		go func() {
+			httpStatus := strconv.Itoa(http.StatusNotFound)
+			monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+			monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+		}()
 
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -89,13 +111,21 @@ func (api *API) GetProducts(w http.ResponseWriter, r *http.Request) {
 	bytesProducts, errMarshal := json.Marshal(api.products)
 	if errMarshal != nil {
 
-		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+		go func() {
+			httpStatus := strconv.Itoa(http.StatusBadRequest)
+			monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+			monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+		}()
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusOK)).Inc()
+	go func() {
+		httpStatus := strconv.Itoa(http.StatusOK)
+		monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+		monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method)
+	}()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytesProducts)
@@ -105,12 +135,17 @@ func (api *API) GetProducts(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	serviceName := "get_product"
+	now := time.Now()
 
 	idStr := chi.URLParam(r, "id")
 	id, errAtoi := strconv.Atoi(idStr)
 	if errAtoi != nil {
 
-		go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusBadRequest)).Inc()
+		go func() {
+			httpStatus := strconv.Itoa(http.StatusBadRequest)
+			monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+			monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+		}()
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -121,11 +156,21 @@ func (api *API) GetProduct(w http.ResponseWriter, r *http.Request) {
 			bytesProduct, errMarshal := json.Marshal(product)
 			if errMarshal != nil {
 
-				go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusOK)).Inc()
+				go func() {
+					httpStatus := strconv.Itoa(http.StatusBadRequest)
+					monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+					monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+				}()
 
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
+
+			go func() {
+				httpStatus := strconv.Itoa(http.StatusOK)
+				monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+				monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+			}()
 
 			w.WriteHeader(http.StatusOK)
 			w.Write(bytesProduct)
@@ -133,7 +178,11 @@ func (api *API) GetProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	go monitoring.TotalRequestApi.WithLabelValues(serviceName, strconv.Itoa(http.StatusNotFound)).Inc()
+	go func() {
+		httpStatus := strconv.Itoa(http.StatusNotFound)
+		monitoring.TotalRequestApi.WithLabelValues(serviceName, httpStatus, r.Method).Inc()
+		monitoring.DurationRequestAPi.WithLabelValues(serviceName, httpStatus, r.Method).Observe(float64(time.Since(now).Nanoseconds()))
+	}()
 
 	w.WriteHeader(http.StatusNotFound)
 	return

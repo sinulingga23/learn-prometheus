@@ -23,7 +23,7 @@ func main() {
 	r.Get("/api/v1/products", api.GetProducts)
 	r.Get("/api/v1/products/{id}", api.GetProduct)
 
-	prometheus.MustRegister(monitoring.TotalRequestApi)
+	prometheus.MustRegister(monitoring.TotalRequestApi, monitoring.DurationRequestAPi)
 	r.Handle("/metrics", promhttp.Handler())
 
 	if errListenAndServe := http.ListenAndServe(":8085", r); errListenAndServe != nil {
